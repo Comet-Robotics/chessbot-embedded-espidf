@@ -6,3 +6,4 @@ sdkconfig.old
 esp-idf-vscode-generated.gdb
 /dependencies.lock
 env.h
+.DS_Store
