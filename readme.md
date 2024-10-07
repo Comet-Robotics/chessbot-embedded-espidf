@@ -2,8 +2,8 @@
 
 ## First Time Setup
 
-1. Open the `./bot` folder in Visual Studio Code.
-2. Create a file `env.h` in the `./bot` folder and initialize it with the environment-specific information using this template:
+1. Open this folder in Visual Studio Code.
+2. Create a file `env.h` in the root folder of the project and initialize it with the environment-specific information using this template:
     ```
     // Put your IP here and uncomment if you aren't on the special router
     //#define FIXED_SERVER_IP "10.0.0.1"
