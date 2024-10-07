@@ -1,29 +1,5 @@
 {
-    "npm.packageManager": "yarn",
-    "task.allowAutomaticTasks": "off",
-    "task.autoDetect": "off",
-    "cSpell.words": [
-        "blueprintjs",
-        "Chessbots",
-        "Premoves",
-        "runtypes",
-        "tanstack"
-    ],
-    "cSpell.enableFiletypes": ["properties"],
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "[typescriptreact]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "[yaml]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "[json]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "[jsonc]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "files.eol": "\n",
-    "files.autoSave": "afterDelay",
-    "editor.formatOnSave": true
+    "idf.adapterTargetName": "esp32s2",
+    "idf.port": "/dev/tty.usbmodem101",
+    "idf.flashType": "UART"
 }

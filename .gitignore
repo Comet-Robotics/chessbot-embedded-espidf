@@ -1,31 +1,8 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-node_modules
-dist
-dist-ssr
-*.local
-.vite/
-
-# Editor directories and files
-# .vscode/*
-# !.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-.vs/*
-*.wsuo
-site/
-!site/CNAME
-
-*/.env
+/build/
+/managed_components/
+sdkconfig.old
+.vscode/settings.json
+/*.log
+esp-idf-vscode-generated.gdb
+/dependencies.lock
+env.h
