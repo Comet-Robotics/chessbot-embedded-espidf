@@ -39,9 +39,10 @@
 7. Plug the target S2 Mini into your computer.
 8. Press the RST button on the S2 Mini while holding the 0 button. This puts the ESP32 into bootloader mode and allows it to be flashed manually.
 9. Run the command "ESP-IDF: Select port to use" and select the port with "usb" in it.
-10. Run the command "ESP-IDF: Build, Flash, and start a monitor on your device"
-11. You should see an error about the flash failing. To verify it worked, enter the Terminal tab and it should say the flash reached 100%. If it didn't, you likely picked the wrong serial port or didn't enter the bootloader.
-12. Press the RST button on the S2 Mini to reboot into your new firmware.
-13. Run the ESP-IDF port selection command again and re-select the port with "usb" in it (it may have changed after the reboot).
-14. Open the "SERIAL MONITOR" tab in the terminal modal (should be to the right of "TERMINAL").
-15. Select the serial port for the S2 Mini and click "Start Monitoring".
+10. Run the command "ESP-IDF: Select Flash Method" and select "UART".
+11. Run the command "ESP-IDF: Build, Flash, and start a monitor on your device".
+12. You should see an error about the flash failing. To verify it worked, enter the Terminal tab and it should say the flash reached 100%. If it didn't, you likely picked the wrong serial port or didn't enter the bootloader.
+13. Press the RST button on the S2 Mini to reboot into your new firmware.
+14. Run the ESP-IDF port selection command again and re-select the port with "usb" in it (it may have changed after the reboot).
+15. Open the "SERIAL MONITOR" tab in the terminal modal (should be to the right of "TERMINAL").
+16. Select the serial port for the S2 Mini and click "Start Monitoring".
