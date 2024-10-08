@@ -8,6 +8,8 @@
 #include <chessbot/robot.h>
 #include <chessbot/update.h>
 
+#include <system_error>
+
 namespace chessbot {
 
 char buf[TcpClient::TCP_BUF_SIZE];
@@ -20,9 +22,9 @@ void robotThread(void* robotPtr)
 
     ESP_LOGI("", "j1");
 
-    while (true) {
-        vTaskDelay(100_s);
-    }
+    // while (true) {
+    //     vTaskDelay(1_ms);
+    // }
 
     while (true) {
         for (int i = 0; i < clientsCount; i++) {
@@ -30,6 +32,7 @@ void robotThread(void* robotPtr)
             TcpClient* client = clients[i];
 
             if (client == nullptr) {
+                ESP_LOGI("", "TcpClient is null");
                 continue;
             }
 
@@ -104,14 +107,22 @@ void robotThread(void* robotPtr)
 
                     if (type == "gpio" || type == "int32") {
                         int val = -1;
-                        auto [ptr, ec] = std::from_chars(value.begin(), value.end() - 1, val);
+                        auto [ptr, ec] = std::from_chars(value.begin(), value.end(), val);
+                        
+                        ESP_LOGI("", "Type: %s, Value: %s", type.data(), value.data());
+                        ESP_LOGI("", "EC: %s", std::generic_category().message(static_cast<int>(ec)).c_str());
+                        
                         CHECK(ec == std::errc());
                         
                         setConfig(key, val);
                     }
                     else if (type == "float") {
                         float val = -1;
-                        auto [ptr, ec] = std::from_chars(value.begin(), value.end() - 1, val);
+                        auto [ptr, ec] = std::from_chars(value.begin(), value.end(), val);
+                        
+                        ESP_LOGI("", "Type: %s, Value: %s", type.data(), value.data());
+                        ESP_LOGI("", "EC: %s", std::generic_category().message(static_cast<int>(ec)).c_str());
+                        
                         CHECK(ec == std::errc());
                         
                         setConfig(key, val);
@@ -125,7 +136,7 @@ void robotThread(void* robotPtr)
             }
         }
 
-        vTaskDelay(1_ms);
+        vTaskDelay(10_ms);
     }
 }
 

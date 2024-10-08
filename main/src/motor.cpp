@@ -76,15 +76,20 @@ void Motor::tick(uint64_t us) { encoder->tick(us); }
 // [-1.0, 1.0]
 void Motor::set(float power)
 {
+
+    ESP_LOGI("", "Setting power=%f and multiplying with driveMultiplier=%f", power, driveMultiplier);
+
     power *= driveMultiplier;
 
     if (power > 0.0) {
         // power = 1 - power;
         channelA.set(power);
         channelB.set(0.0);
+        ESP_LOGI("", "Motor %f %f", power, 0.0);
     } else {
         channelA.set(0.0);
         channelB.set(-power);
+        ESP_LOGI("", "Motor %f %f", 0.0, power);
     }
 
     // gpio_set_level(channelB, reverse);

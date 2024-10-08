@@ -13,6 +13,7 @@
 
 #include <chessbot/log.h>
 #include <chessbot/unit.h>
+#include <string>
 
 namespace chessbot {
 class TcpClient {
@@ -207,6 +208,11 @@ public:
         } else {
             // Data received
             ESP_LOGI("rnet", "Received %d bytes", len);
+
+            // Log the content as a string
+            std::string receivedData(rxBuf, len);
+            ESP_LOGI("rnet", "Received content: %s", receivedData.c_str());
+
 
             size_t sent = xStreamBufferSend(rxStream, (void*)rxBuf, len, portMAX_DELAY);
             CHECK(sent == len);
