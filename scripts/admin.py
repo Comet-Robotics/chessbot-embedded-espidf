@@ -1,6 +1,7 @@
 import pip
 import socket
 import time
+import json
 
 def import_or_install(package):
     try:
@@ -9,25 +10,30 @@ def import_or_install(package):
         pip.main(['install', package])
         return __import__(package)
 
-pygame = import_or_install("pygame")
-pygame_menu = import_or_install("pygame_menu")
-themes = pygame_menu.themes
+dearpygui = import_or_install("dearpygui")
+import dearpygui.dearpygui as dpg
 
 JSON_PORT = 80
-DEFAULT_IP = '192.168.113.184'
+DEFAULT_IP = '192.168.222.32'
 
-pygame.init()
-pygame.display.set_caption('ChessBot Local Admin')
+KEY_W = 87
+KEY_A = 65
+KEY_S = 83
+KEY_D = 68
 
-ipInput = None
+def parse_packet(packet: str):
+    if packet.endswith(';'):
+        packet = packet[:-1]
+
+    data = json.loads(packet)
+
+    return data
+
+robot_ip_box = None
+robot_mac_text = None
+
+robot_ip = None
 sock = None
-
-surface = pygame.display.set_mode((1200, 800))
-
-def set_difficulty(value, difficulty):
-    print(value)
-    print(difficulty)
-
 sock_data = ""
 line = ""
 def read_until_newline():
@@ -45,49 +51,117 @@ def read_until_newline():
             print('Got some data: ', chunk.decode('utf-8'))
             
             sock_data += chunk.decode('utf-8')
-            if '\n' in sock_data:
-                pos = sock_data.find('\n')
+            if ';' in sock_data:
+                pos = sock_data.find(';')
                 line = sock_data[0:pos]
                 sock_data = sock_data[pos:]
                 break
 
         time.sleep(0.01)
- 
-def connect():
-    global sock, line
 
-    ip = ipInput.get_value()
-    print('Connecting to', ip)
+def send_nonblocking(message):
+    global sock
+
+    if sock == None:
+        return
+
+    message_bytes = message.encode('utf-8')
+    total_sent = 0
+    message_len = len(message_bytes)
+
+    while total_sent < message_len:
+        try:
+            sent = sock.send(message_bytes[total_sent:])
+            if sent == 0:
+                raise RuntimeError("Socket connection broken")
+            total_sent += sent
+        except BlockingIOError:
+            # The socket is not ready for writing, wait and try again
+            time.sleep(0.1)
+ 
+def connect_to_robot(sender, app_data, user_data):
+    global robot_ip, sock, line
+
+    robot_ip = dpg.get_value(user_data)
+
+    print('Connecting to', robot_ip)
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect((ip, JSON_PORT))
+    sock.connect((robot_ip, JSON_PORT))
     sock.setblocking(0)
 
     # Expect a hello
     read_until_newline()
     print('output', line)
+
+    packet = parse_packet(line)
+    if packet['type'] != "CLIENT_HELLO":
+        print('Incorrect first packet from robot!')
+
+    macAddress = packet['macAddress']
+    dpg.set_value(robot_mac_text, "Robot MAC Address: " + macAddress)
+
+dpg.create_context()
+
+is_w_held = None
+is_a_held = None
+is_s_held = None
+is_d_held = None
+
+def key_down_callback(sender, app_data, user_data):
+    global is_w_held, is_a_held, is_s_held, is_d_held
+
+    if app_data[1] == 0: # when first pressed
+        print(f"Key pressed: {app_data}")
+
+        if app_data[0] == KEY_W:
+            is_w_held = True
+            send_nonblocking('{"type":"DRIVE_TANK","left":1,"right":1};')
+        elif app_data[0] == KEY_A:
+            is_a_held = True
+            send_nonblocking('{"type":"DRIVE_TANK","left":-1,"right":1};')
+        elif app_data[0] == KEY_S:
+            is_s_held = True
+            send_nonblocking('{"type":"DRIVE_TANK","left":1,"right":-1};')
+        elif app_data[0] == KEY_D:
+            is_d_held = True
+            send_nonblocking('{"type":"DRIVE_TANK","left":-1,"right":-1};')
+
+def key_up_callback(sender, app_data, user_data):
+    global is_w_held, is_a_held, is_s_held, is_d_held
+
+    print(f"Key pressed: {app_data}")
+    if app_data == KEY_W:
+        is_w_held = False
+    elif app_data == KEY_A:
+        is_a_held = False
+    elif app_data == KEY_S:
+        is_s_held = False
+    elif app_data == KEY_D:
+        is_d_held = False
     
- 
-def level_menu():
-    mainmenu._open(level)
+    if not is_w_held and not is_a_held and not is_s_held and not is_d_held:
+        send_nonblocking('{"type":"DRIVE_TANK","left":0,"right":0};')
 
-mainmenu = pygame_menu.Menu('Welcome', 1200, 800, theme=themes.THEME_SOLARIZED)
+with dpg.handler_registry():
+    dpg.add_key_down_handler(callback=key_down_callback)
+    dpg.add_key_release_handler(callback=key_up_callback)
 
-ipInput = mainmenu.add.text_input('Target IP: ', default=DEFAULT_IP, maxchar=15)
-mainmenu.add.button('Connect', connect)
-mainmenu.add.button('Levels', level_menu)
-mainmenu.add.button('Quit', pygame_menu.events.EXIT)
- 
-level = pygame_menu.Menu('Select a Difficulty', 1200, 800, theme=themes.THEME_BLUE)
-level.add.selector('Difficulty:',[('Hard',1),('Easy',2)], onchange=set_difficulty)
+with dpg.window(label="ChessBot Local Admin"):
+    dpg.add_text("Robot Connection Information")
+    robot_ip_box = dpg.add_input_text(label="IP", default_value=DEFAULT_IP)
+    dpg.add_button(label="Connect", callback=connect_to_robot, user_data=robot_ip_box)
 
-while True:
-    events = pygame.event.get()
-    for event in events:
-        if event.type == pygame.QUIT:
-            exit()
- 
-    if mainmenu.is_enabled():
-        mainmenu.update(events)
-        mainmenu.draw(surface)
- 
-    pygame.display.update()
+    robot_mac_text = dpg.add_text("Robot MAC Address: None");
+    
+    #dpg.add_slider_float(label="float", default_value=0.273, max_value=1)
+
+dpg.create_viewport(title='ChessBot Local Admin', width=1000, height=700)
+dpg.setup_dearpygui()
+dpg.show_viewport()
+
+while dpg.is_dearpygui_running():
+
+
+    dpg.render_dearpygui_frame()
+
+dpg.destroy_context()

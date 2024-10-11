@@ -22,6 +22,7 @@ public:
     rotary_encoder_info_t info;
 
     Encoder(gpio_num_t channelA_, gpio_num_t channelB_);
+    Encoder();
     ~Encoder();
 
     // Get how far the encoder has moved since this function was last called
@@ -32,25 +33,26 @@ public:
     void reset();
 
     void tick(uint64_t us);
+
+    bool isValid();
 };
 
 class Motor {
 public:
-    Encoder* encoder;
-    // PwmPin powerPin;
+    Encoder encoder;
 
     PwmPin channelA;
     PwmPin channelB;
 
-    float driveMultiplier;
+    float& driveMultiplier;
 
     Motor(gpio_num_t motorChannelA_,
         gpio_num_t motorChannelB_,
         gpio_num_t encoderChannelA_,
         gpio_num_t encoderChannelB_,
-        float driveMultiplier_ = 1.0);
+        float& driveMultiplier_);
 
-    Motor(gpio_num_t motorChannelA_, gpio_num_t motorChannelB_, float driveMultiplier_ = 1.0);
+    Motor();
 
     int32_t pos();
 

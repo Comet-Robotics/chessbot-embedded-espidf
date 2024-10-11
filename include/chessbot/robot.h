@@ -18,6 +18,7 @@
 #include <chessbot/lightSensor.h>
 #include <chessbot/motor.h>
 #include <chessbot/net.h>
+#include <chessbot/desc.h>
 
 namespace chessbot {
 // Put the robot in a known state
@@ -59,8 +60,13 @@ public:
 
     Button button0;
 
+#ifdef MOTOR_TYPE_PWM
+    Desc left;
+    Desc right;
+#else // MOTOR_TYPE_PWM
     Motor left;
     Motor right;
+#endif
 
     DifferentialKinematics kinematics;
 

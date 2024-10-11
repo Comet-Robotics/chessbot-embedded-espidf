@@ -5,7 +5,12 @@
 
 namespace chessbot {
 
-Desc::Desc(gpio_num_t port) : pin(port) {}
+Desc::Desc(gpio_num_t motorChannelA_,
+        gpio_num_t motorChannelB_,
+        gpio_num_t encoderChannelA_,
+        gpio_num_t encoderChannelB_,
+        float& driveMultiplier_) :
+            pin(motorChannelA_), driveMultiplier(driveMultiplier_) {}
 
 Desc::~Desc() {}
 
@@ -26,6 +31,10 @@ void Desc::set(float power) {
     uint32_t duty = fmap(us, 0, FORWARD_MAX, 0, ((1 << PwmPin::LEDC_DUTY_RES) - 1));
 
     pin.setDuty(duty);
+}
+
+int32_t Desc::pos() { 
+    return 0; // todo: estimate?
 }
 
 }; // namespace chessbot

@@ -23,9 +23,14 @@ class Desc {
 
     private:
     PwmPin pin;
+    float& driveMultiplier;
 
     public:
-    Desc(gpio_num_t port);
+    Desc(gpio_num_t motorChannelA_,
+        gpio_num_t motorChannelB_,
+        gpio_num_t encoderChannelA_,
+        gpio_num_t encoderChannelB_,
+        float& driveMultiplier_);
     ~Desc();
 
     // Set speed in [-0.0, 1.0]
@@ -34,6 +39,8 @@ class Desc {
     void stop();
 
     void start();
+
+    int32_t pos();
 };
 
 }; // namespace chessbot

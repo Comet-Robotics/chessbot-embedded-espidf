@@ -12,6 +12,13 @@ Encoder::Encoder(gpio_num_t channelA_, gpio_num_t channelB_)
     CHECK(rotary_encoder_init(&info, channelA, channelB));
     CHECK(rotary_encoder_enable_half_steps(&info, true));
 }
+Encoder::Encoder()
+    : channelA(GPIO_NUM_NC)
+    , channelB(GPIO_NUM_NC)
+{
+    CHECK(rotary_encoder_init(&info, channelA, channelB));
+    CHECK(rotary_encoder_enable_half_steps(&info, true));
+}
 Encoder::~Encoder()
 {
     CHECK(rotary_encoder_uninit(&info));
@@ -35,10 +42,15 @@ int32_t Encoder::getDelta()
 
 int32_t Encoder::read()
 {
-    rotary_encoder_state_t state = { 0 };
-    CHECK(rotary_encoder_get_state(&info, &state));
+    if (isValid()) { 
+        rotary_encoder_state_t state = { 0 };
+        CHECK(rotary_encoder_get_state(&info, &state));
 
-    return state.position;
+        return state.position;
+    }
+    else {
+        return 0;
+    }
 }
 
 void Encoder::reset()
@@ -48,30 +60,31 @@ void Encoder::reset()
 
 void Encoder::tick(uint64_t us) { }
 
+bool Encoder::isValid() {
+    return channelA != GPIO_NUM_NC && channelB != GPIO_NUM_NC;
+}
+
 Motor::Motor(gpio_num_t motorChannelA_,
     gpio_num_t motorChannelB_,
     gpio_num_t encoderChannelA_,
     gpio_num_t encoderChannelB_,
-    float driveMultiplier_)
-    //: encoder(new Encoder(encoderChannelA_, encoderChannelB_))
-    : encoder(nullptr)
+    float& driveMultiplier_)
+    : encoder(encoderChannelA_, encoderChannelB_)
     , channelA(motorChannelA_)
     , channelB(motorChannelB_)
-    , driveMultiplier(driveMultiplier_)
-{
-    // gpio_set_direction(motorChannelB_, GPIO_MODE_OUTPUT);
-    // gpio_set_level(motorChannelB_, 0);
-}
+    , driveMultiplier(driveMultiplier_) {}
 
-int32_t Motor::pos() { return encoder->read(); }
+int32_t Motor::pos() { 
+    return encoder.read();
+}
 
 void Motor::reset()
 {
     set(0);
-    encoder->reset();
+    encoder.reset();
 }
 
-void Motor::tick(uint64_t us) { encoder->tick(us); }
+void Motor::tick(uint64_t us) { encoder.tick(us); }
 
 // [-1.0, 1.0]
 void Motor::set(float power)
