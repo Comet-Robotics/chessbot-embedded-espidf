@@ -7,3 +7,4 @@ esp-idf-vscode-generated.gdb
 /dependencies.lock
 env.h
 .DS_Store
+__pycache__

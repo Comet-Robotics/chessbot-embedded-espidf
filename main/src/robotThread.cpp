@@ -22,10 +22,6 @@ void robotThread(void* robotPtr)
 
     ESP_LOGI("", "j1");
 
-    // while (true) {
-    //     vTaskDelay(1_ms);
-    // }
-
     while (true) {
         for (int i = 0; i < clientsCount; i++) {
             ESP_LOGI("", "j3");
@@ -38,6 +34,11 @@ void robotThread(void* robotPtr)
 
             ESP_LOGI("", "j4");
             int read = client->readUntilTerminator(buf, sizeof(buf), ';');
+
+            if (read == -1) {
+                continue;
+            }
+
             ESP_LOGI("", "j5");
 
             std::string_view str(buf, read);

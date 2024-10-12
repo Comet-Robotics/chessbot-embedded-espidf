@@ -42,7 +42,7 @@ with open('./env.h', 'r') as f:
 
     serialPortSearch = re.search(r'esp32\-serial=(.+)\n', contents)
     if serialPortSearch is not None:
-        serialPortFlag = "-p " + serialPortSearch[0]
+        serialPortFlag = "-p " + serialPortSearch.groups()[0]
 
 if binaryLocation == None:
     binaryLocation = '/build'

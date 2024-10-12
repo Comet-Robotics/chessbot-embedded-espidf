@@ -72,7 +72,8 @@
         "env": {
           "PATH": "${env:PATH}:${config:idf.customExtraPaths}",
           "espIdfPath": "${config:idf.espIdfPath}",
-          "espIdfPathWin": "${config:idf.espIdfPathWin}"
+          "espIdfPathWin": "${config:idf.espIdfPathWin}",
+          "cwd": "${workspaceFolder}/admin"
         }
       },
       "problemMatcher": []
