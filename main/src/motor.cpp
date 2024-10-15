@@ -9,8 +9,8 @@ Encoder::Encoder(gpio_num_t channelA_, gpio_num_t channelB_)
     : channelA(channelA_)
     , channelB(channelB_)
 {
-    CHECK(rotary_encoder_init(&info, channelA, channelB));
-    CHECK(rotary_encoder_enable_half_steps(&info, true));
+    //CHECK(rotary_encoder_init(&info, channelA, channelB));
+    //CHECK(rotary_encoder_enable_half_steps(&info, true));
 }
 Encoder::Encoder()
     : channelA(GPIO_NUM_NC)

@@ -60,15 +60,15 @@ public:
 
     Button button0;
 
-#ifdef MOTOR_TYPE_PWM
+#ifdef MOTOR_TYPE_DESC
     Desc left;
     Desc right;
 #else // MOTOR_TYPE_PWM
     Motor left;
     Motor right;
-#endif
 
     DifferentialKinematics kinematics;
+#endif
 
     LightSensor frontLeft, frontRight, backLeft, backRight;
 
@@ -79,7 +79,9 @@ public:
         : button0(GPIO_NUM_0)
         , left(PINCONFIG(MOTOR_A_PIN1), PINCONFIG(MOTOR_A_PIN2), PINCONFIG(ENCODER_A_PIN1), PINCONFIG(ENCODER_A_PIN2), FCONFIG(MOTOR_A_DRIVE_MULTIPLIER))
         , right(PINCONFIG(MOTOR_B_PIN1), PINCONFIG(MOTOR_B_PIN2), PINCONFIG(ENCODER_B_PIN1), PINCONFIG(ENCODER_B_PIN2), FCONFIG(MOTOR_B_DRIVE_MULTIPLIER))
+#ifndef MOTOR_TYPE_DESC
         , kinematics(left, right)
+#endif
         , frontLeft(PINCONFIG(PHOTODIODE_FRONT_LEFT))
         , frontRight(PINCONFIG(PHOTODIODE_FRONT_RIGHT))
         , backLeft(PINCONFIG(PHOTODIODE_BACK_LEFT))

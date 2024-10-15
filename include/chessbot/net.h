@@ -209,9 +209,8 @@ public:
             // Data received
             ESP_LOGI("rnet", "Received %d bytes", len);
 
-            // Log the content as a string
-            std::string receivedData(rxBuf, len);
-            ESP_LOGI("rnet", "Received content: %s", receivedData.c_str());
+            // Log the content. It's not null terminated, so this works
+            ESP_LOGI("rnet", "Received content: %s", rxBuf);
 
 
             size_t sent = xStreamBufferSend(rxStream, (void*)rxBuf, len, portMAX_DELAY);

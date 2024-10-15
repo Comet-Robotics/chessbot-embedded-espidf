@@ -37,4 +37,6 @@ int32_t Desc::pos() {
     return 0; // todo: estimate?
 }
 
+void Desc::tick(uint64_t us) {}
+
 }; // namespace chessbot

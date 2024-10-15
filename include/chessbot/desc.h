@@ -41,6 +41,8 @@ class Desc {
     void start();
 
     int32_t pos();
+
+    void tick(uint64_t us);
 };
 
 }; // namespace chessbot
