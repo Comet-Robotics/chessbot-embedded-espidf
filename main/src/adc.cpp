@@ -80,8 +80,8 @@ int adcRead(adc_channel_t channel)
     int voltage = -1;
 
     CHECK(adc_oneshot_read(adcHandle, channel, &raw));
-    CHECK(adc_cali_raw_to_voltage(adc1_cali_chan0_handle, raw, &voltage));
+    // CHECK(adc_cali_raw_to_voltage(adc1_cali_chan0_handle, raw, &voltage));
 
-    return voltage;
+    return raw;
 }
 }; // namespace chessbot
