@@ -50,6 +50,8 @@ public:
 
     static float ticksToDistance(int32_t ticks);
 
+    static float getTicksPerInch();
+
     void forward(float dist);
 
     void refresh();
