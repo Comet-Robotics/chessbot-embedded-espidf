@@ -5,16 +5,16 @@
 
 namespace chessbot {
 
-Desc::Desc(gpio_num_t motorChannelA_,
+MotorDesc::MotorDesc(gpio_num_t motorChannelA_,
         gpio_num_t motorChannelB_,
         gpio_num_t encoderChannelA_,
         gpio_num_t encoderChannelB_,
         float& driveMultiplier_) :
             pin(motorChannelA_), driveMultiplier(driveMultiplier_) {}
 
-Desc::~Desc() {}
+MotorDesc::~MotorDesc() {}
 
-void Desc::set(float power) {
+void MotorDesc::set(float power) {
     // Find desired length of pulses in microseconds
     uint32_t us = 0;
     if (power == 0.0) {
@@ -33,10 +33,10 @@ void Desc::set(float power) {
     pin.setDuty(duty);
 }
 
-int32_t Desc::pos() { 
+int32_t MotorDesc::pos() { 
     return 0; // todo: estimate?
 }
 
-void Desc::tick(uint64_t us) {}
+void MotorDesc::tick(uint64_t us) {}
 
 }; // namespace chessbot

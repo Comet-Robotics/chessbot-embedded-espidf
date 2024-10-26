@@ -20,7 +20,7 @@ TcpClient* clients[MAX_TCP_SOCKETS] = {};
 int clientsCount = 0;
 
 // Accept sockets first, then recieve sockets since there are more of them
-pollfd pollDescriptors[TOTAL_DESCRIPTORS] = {};
+pollfd pollDescriptors[MAX_TCP_SOCKETS] = {};
 
 void printBits(size_t const size, void const * const ptr)
 {
@@ -60,7 +60,7 @@ void invalidateClient(TcpClient* client) {
 void netThread(void*)
 {
     while (true) {
-        int rc = poll(pollDescriptors, clientsCount, 500);
+        int rc = poll(pollDescriptors, clientsCount, 5000);
         if (rc < 0) {
             ESP_LOGI("", "Poll failed!");
             FAIL();
@@ -70,7 +70,7 @@ void netThread(void*)
             continue;
         } else if (rc > 0) {
             // Something happened to a listening descriptor
-            for (int i = MAX_TCP_ACCEPT_SOCKETS; i < (clientsCount + MAX_TCP_ACCEPT_SOCKETS); i++) {
+            for (int i = 0; i < clientsCount; i++) {
                 int revents = pollDescriptors[i].revents;
 
                 // This is designed so that remaining data is read first, then an invalid state is handled
@@ -84,31 +84,6 @@ void netThread(void*)
                     // Got closed
                     ESP_LOGI("", "Invalidating for netThread 2");
                     invalidateClient(clients[i]);
-                }
-            }
-
-            // Something happened to an accepting descriptor
-            for (int i = 0; i < MAX_TCP_ACCEPT_SOCKETS; i++) {
-                int revents = pollDescriptors[i].revents;
-
-                if (revents != 0) {
-                    ESP_LOGI("", "TCP IN REVENTS ");
-                    printBits(2, &revents);
-                    ESP_LOGI("", "");
-                }
-
-                // This is designed so that remaining data is read first, then an invalid state is handled
-                if (revents & POLLIN) {
-                    ESP_LOGI("", "Accept POLLIN");
-                    acceptTcpServer(pollDescriptors[i].fd);
-                } else if (revents & POLLNVAL) {
-                    // Was never valid
-                    ESP_LOGI("", "Accept POLLNVAL");
-                    CHECK(false);
-                } else if (revents & (POLLHUP | POLLERR)) {
-                    // Got closed
-                    ESP_LOGI("", "Reopening accepting TCP socket?");
-                    startTcpServer();
                 }
             }
         }
@@ -132,7 +107,7 @@ void acceptThread(void*)
     for (addrinfo* i = serverSocketInfo; i != nullptr; i = i->ai_next) {
         sock = socket(i->ai_family, i->ai_socktype, i->ai_protocol);
         if (sock < 0) {
-            perror("socket() error, nonfatal");
+            ESP_LOGE("rnet", "socket() error, nonfatal: %s", strerror(errno));
             continue;
         }
 
@@ -156,7 +131,7 @@ void acceptThread(void*)
 
 void startNetThread()
 {   
-    for (int i = 0; i < TOTAL_DESCRIPTORS; i++) {
+    for (int i = 0; i < MAX_TCP_SOCKETS; i++) {
         pollDescriptors[i].fd = -1;
     }
 
@@ -184,7 +159,7 @@ TcpClient* addTcpClient(uint32_t targetIp, uint16_t port)
 }
 
 // Add a client to poll from an already created socket
-TcpClient* addTcpClient(int fd, sockaddr_in* addr)
+TcpClient* addTcpClientFromSock(int fd, sockaddr_in* addr)
 {
     ESP_LOGI("", "Adding client to slot %d", clientsCount);
 
@@ -204,7 +179,7 @@ void acceptTcpServer(int acceptSock)
 {
     sockaddr sourceAddr;
     socklen_t addrLen = sizeof(sourceAddr);
-    ESP_LOGI("", "preAccept");
+    ESP_LOGI("", "Socket is ready for accept");
     int sock = accept(acceptSock, (struct sockaddr*)&sourceAddr, &addrLen);
     if (sock < 0) {
         ESP_LOGI("", "Unable to accept connection: errno %d", errno);
@@ -236,10 +211,10 @@ void acceptTcpServer(int acceptSock)
     inet_ntoa_r(((sockaddr_in *)&sourceAddr)->sin_addr, addrStr, sizeof(addrStr) - 1);
     ESP_LOGI("", "Opened socket to %s", addrStr);
 
-    TcpClient* client = addTcpClient(sock, (sockaddr_in*)&sourceAddr);
+    TcpClient* client = addTcpClientFromSock(sock, (sockaddr_in*)&sourceAddr);
     client->waitToConnect();
 
-    ESP_LOGI("", "Sending hello\n");
+    ESP_LOGI("", "Sending hello");
     client->sendHello();
 }
 

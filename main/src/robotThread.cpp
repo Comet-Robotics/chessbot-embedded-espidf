@@ -12,8 +12,6 @@
 
 namespace chessbot {
 
-char buf[TcpClient::TCP_BUF_SIZE];
-
 // On its thread, a robot parses commands and acts on them
 void robotThread(void* robotPtr)
 {
@@ -24,24 +22,22 @@ void robotThread(void* robotPtr)
 
     while (true) {
         for (int i = 0; i < clientsCount; i++) {
-            ESP_LOGI("", "j3");
             TcpClient* client = clients[i];
 
             if (client == nullptr) {
                 ESP_LOGI("", "TcpClient is null");
                 continue;
             }
+            
+            int read = client->readUntilTerminator();
 
-            ESP_LOGI("", "j4");
-            int read = client->readUntilTerminator(buf, sizeof(buf), ';');
-
-            if (read == -1) {
+            if (read < 2) {
                 continue;
             }
 
             ESP_LOGI("", "j5");
 
-            std::string_view str(buf, read);
+            std::string_view str(client->packetBuf, read);
 
             // Read JSON packet
             DeserializationError error = deserializeJson(json, str);

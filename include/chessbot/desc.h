@@ -11,7 +11,7 @@
 namespace chessbot {
 
 // Brushed Electronic Speed Controller
-class Desc {
+class MotorDesc {
     public:
     constexpr static uint32_t FORWARD_MIN = 1900;
     constexpr static uint32_t FORWARD_MAX = 2200;
@@ -26,12 +26,12 @@ class Desc {
     float& driveMultiplier;
 
     public:
-    Desc(gpio_num_t motorChannelA_,
+    MotorDesc(gpio_num_t motorChannelA_,
         gpio_num_t motorChannelB_,
         gpio_num_t encoderChannelA_,
         gpio_num_t encoderChannelB_,
         float& driveMultiplier_);
-    ~Desc();
+    ~MotorDesc();
 
     // Set speed in [-0.0, 1.0]
     void set(float power);

@@ -64,7 +64,7 @@ bool Encoder::isValid() {
     return channelA != GPIO_NUM_NC && channelB != GPIO_NUM_NC;
 }
 
-Motor::Motor(gpio_num_t motorChannelA_,
+MotorPwm::MotorPwm(gpio_num_t motorChannelA_,
     gpio_num_t motorChannelB_,
     gpio_num_t encoderChannelA_,
     gpio_num_t encoderChannelB_,
@@ -74,20 +74,20 @@ Motor::Motor(gpio_num_t motorChannelA_,
     , channelB(motorChannelB_)
     , driveMultiplier(driveMultiplier_) {}
 
-int32_t Motor::pos() { 
+int32_t MotorPwm::pos() { 
     return encoder.read();
 }
 
-void Motor::reset()
+void MotorPwm::reset()
 {
     set(0);
     encoder.reset();
 }
 
-void Motor::tick(uint64_t us) { encoder.tick(us); }
+void MotorPwm::tick(uint64_t us) { encoder.tick(us); }
 
 // [-1.0, 1.0]
-void Motor::set(float power)
+void MotorPwm::set(float power)
 {
 
     ESP_LOGI("", "Setting power=%f and multiplying with driveMultiplier=%f", power, driveMultiplier);

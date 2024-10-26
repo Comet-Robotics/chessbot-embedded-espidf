@@ -2,7 +2,6 @@
 #define CHESSBOT_ROBOT_H
 
 #include <array>
-#include <semaphore>
 #include <optional>
 
 #include <esp_flash_partitions.h>
@@ -19,89 +18,70 @@
 #include <chessbot/motor.h>
 #include <chessbot/net.h>
 #include <chessbot/desc.h>
+#include <chessbot/log.h>
 
 namespace chessbot {
+
+// Check if the latest OTA update has been verified
+bool isOtaUpdateVerified();
+
 // Put the robot in a known state
-inline void setGpioOff()
-{
-    #ifdef OTA_ENABLED
-    esp_ota_img_states_t state;
-
-    CHECK(esp_ota_get_state_partition(esp_ota_get_running_partition(), &state));
-
-    if (state == ESP_OTA_IMG_PENDING_VERIFY) {
-        // Don't do potentially dangerous GPIO while testing a new update
-        return;
-    }
-    #endif
-
-    gpio_set_level(PINCONFIG(MOTOR_A_PIN1), 0);
-    gpio_set_level(PINCONFIG(MOTOR_A_PIN2), 0);
-    gpio_set_level(PINCONFIG(MOTOR_B_PIN1), 0);
-    gpio_set_level(PINCONFIG(MOTOR_B_PIN2), 0);
-
-    gpio_set_level(PINCONFIG(PHOTODIODE_FRONT_LEFT), 0);
-    gpio_set_level(PINCONFIG(PHOTODIODE_FRONT_RIGHT), 0);
-    gpio_set_level(PINCONFIG(PHOTODIODE_BACK_LEFT), 0);
-    gpio_set_level(PINCONFIG(PHOTODIODE_BACK_RIGHT), 0);
-}
+void setGpioOff();
 
 // Emergency shutdown handler
-inline void safetyShutdown() {
-    setGpioOff();
-}
+void safetyShutdown();
+
+void robotLogSink(std::string_view str);
 
 // The state of a chess bot
 class Robot {
 public:
-    enum NOTIFY {
-        ROBOT_NOTIFY_DNS
-    };
-
+    // Onboard button marked 0 on the S2 Mini
     Button button0;
 
-#ifdef MOTOR_TYPE_DESC
-    Desc left;
-    Desc right;
-#else // MOTOR_TYPE_PWM
-    Motor left;
-    Motor right;
+    MOTOR_TYPE left;
+    MOTOR_TYPE right;
 
     DifferentialKinematics kinematics;
-#endif
 
     LightSensor frontLeft, frontRight, backLeft, backRight;
 
+    // Outbound client to centralized server, if applicable
     TcpClient* client;
+
+    // Task handling robot net sockets and commands
     TaskHandle_t task;
 
     Robot()
         : button0(GPIO_NUM_0)
         , left(PINCONFIG(MOTOR_A_PIN1), PINCONFIG(MOTOR_A_PIN2), PINCONFIG(ENCODER_A_PIN1), PINCONFIG(ENCODER_A_PIN2), FCONFIG(MOTOR_A_DRIVE_MULTIPLIER))
         , right(PINCONFIG(MOTOR_B_PIN1), PINCONFIG(MOTOR_B_PIN2), PINCONFIG(ENCODER_B_PIN1), PINCONFIG(ENCODER_B_PIN2), FCONFIG(MOTOR_B_DRIVE_MULTIPLIER))
-#ifndef MOTOR_TYPE_DESC
         , kinematics(left, right)
-#endif
         , frontLeft(PINCONFIG(PHOTODIODE_FRONT_LEFT))
         , frontRight(PINCONFIG(PHOTODIODE_FRONT_RIGHT))
         , backLeft(PINCONFIG(PHOTODIODE_BACK_LEFT))
         , backRight(PINCONFIG(PHOTODIODE_BACK_RIGHT))
     {
+        // Shut down robot hardware when esp_restart() is called
         esp_register_shutdown_handler(safetyShutdown);
 
-        ESP_LOGI("", "p1");
+        overrideLog();
+        addLogSink(robotLogSink);
+
+        // Start task that polls robot net sockets and acts on their commands
         runThread();
 
-        ESP_LOGI("", "p2");
+        connectToServer();
+    }
+
+    void connectToServer() {
         auto ip = getServerIp();
 
         if (ip) {
             uint16_t port = 3001;
 
             client = addTcpClient(ip->u_addr.ip4.addr, port);
-            ESP_LOGI("", "p3");
             client->waitToConnect();
-            ESP_LOGI("", "p4");
             client->sendHello();
 
             ESP_LOGI("", "Sent HELLO to server");
@@ -179,6 +159,9 @@ public:
 
     void runThread();
 };
+
+extern std::optional<Robot> robot;
+
 }; // namespace chessbot
 
 #endif // ifndef CHESSBOT_ROBOT_H

@@ -11,7 +11,7 @@
 #include <chessbot/motor.h>
 
 namespace chessbot {
-DifferentialKinematics::DifferentialKinematics(Motor& leftMotor_, Motor& rightMotor_)
+DifferentialKinematics::DifferentialKinematics(MOTOR_TYPE& leftMotor_, MOTOR_TYPE& rightMotor_)
 {
     leftConfig.init_param.kp = 0.1; // Proportional
     leftConfig.init_param.ki = 0; // Integral

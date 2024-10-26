@@ -5,6 +5,7 @@
 
 #include <rotary_encoder.h>
 
+#include <chessbot/util.h>
 #include <chessbot/dac.h>
 
 namespace chessbot {
@@ -37,7 +38,7 @@ public:
     bool isValid();
 };
 
-class Motor {
+class MotorPwm {
 public:
     Encoder encoder;
 
@@ -46,13 +47,13 @@ public:
 
     float& driveMultiplier;
 
-    Motor(gpio_num_t motorChannelA_,
+    MotorPwm(gpio_num_t motorChannelA_,
         gpio_num_t motorChannelB_,
         gpio_num_t encoderChannelA_,
         gpio_num_t encoderChannelB_,
         float& driveMultiplier_);
 
-    Motor();
+    MotorPwm();
 
     int32_t pos();
 

@@ -90,7 +90,7 @@ extern "C" void app_main()
 
     startNetThread();
 
-    Robot robot;
+    robot.emplace();
 
     while (true) {
         ESP_LOGI("", "still running");

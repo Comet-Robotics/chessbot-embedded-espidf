@@ -18,6 +18,8 @@
 namespace chessbot {
 class TcpClient {
 public:
+    constexpr static const char* TAG = "net";
+
     constexpr static int TCP_BUF_SIZE = 1024;
     constexpr static int TCP_MSG_SIZE_MAX = 1024;
     constexpr static std::pair<TickType_t, TickType_t> TCP_RETRY_FREQUENCY = { 3_s, 10_s };
@@ -31,12 +33,21 @@ public:
     TickType_t lastRetry = 0;
     bool reconnectOnFail = false;
 
+    // Recieve target
     char rxBuf[TCP_BUF_SIZE] = {};
+
+    // Used to send packet characters from net thread to robot thread
     StreamBufferHandle_t rxStream = nullptr;
+
+    // Accumulates packet data until ;
+    char packetBuf[TcpClient::TCP_BUF_SIZE];
+    int packetBufIndex = 0;
 
     // Create a TCP connection by connecting to a remote socket
     TcpClient(uint32_t targetIp, uint16_t port)
     {
+        ESP_LOGI(TAG, "Construct TcpClient with ip, port %d", (int)port);
+
         makeBufs();
 
         destAddr.sin_family = AF_INET;
@@ -49,6 +60,8 @@ public:
     // Create a TCP connection by connecting to a remote socket
     TcpClient(const char* targetIp, uint16_t port)
     {
+        ESP_LOGI(TAG, "Construct TcpClient with ip, port %d", (int)port);
+
         makeBufs();
 
         destAddr.sin_family = AF_INET;
@@ -61,7 +74,7 @@ public:
     // Create from a socket that already exists
     TcpClient(int fd, sockaddr_in* addr)
     {
-        ESP_LOGI("rnet", "Construct TcpClient directly with FD %d", fd);
+        ESP_LOGI(TAG, "Construct TcpClient directly with FD %d", fd);
         sock = fd;
         memcpy(&this->destAddr, &addr, sizeof(addr));
 
@@ -82,9 +95,15 @@ public:
     // Returns whether to destroy the object
     bool invalidate()
     {
-        ESP_LOGI("rnet", "Invalidating socket");
+        ESP_LOGI(TAG, "Invalidating socket");
 
-        sock = -1;
+        int prevSock = sock;
+
+        if (sock != -1) {
+            ::close(sock);
+            sock = -1;
+        }
+        
         xEventGroupClearBits(status, STATUS_OPEN);
 
         // Note: if a task is waiting on this stream, this call will silently fail
@@ -92,7 +111,7 @@ public:
 
         if (reconnectOnFail) 
         {
-            ESP_LOGI("rnet", "Reconnecting due to reconnectOnFail with FD %d", sock);
+            ESP_LOGI(TAG, "Reconnecting due to reconnectOnFail with FD %d", prevSock);
             connect();
             return false;
         }
@@ -105,14 +124,14 @@ public:
     void connect()
     {
         if (sock != -1) {
-            ESP_LOGE("rnet", "Tried to connect on full socket");
+            ESP_LOGE(TAG, "Tried to connect on full socket");
             // Already connected
             return;
         }
 
         xEventGroupSetBits(status, STATUS_CONNECTING);
 
-        ESP_LOGI("rnet", "Start connect");
+        ESP_LOGI(TAG, "Start connect");
 
         // Backoff
         TickType_t now = xTaskGetTickCount();
@@ -122,26 +141,26 @@ public:
             lastRetry = now;
         }
 
-        ESP_LOGI("rnet", "Start connect 2");
+        ESP_LOGI(TAG, "Start connect 2");
 
         sock = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (sock < 0) {
-            perror("Socket creation failed");
+            ESP_LOGE(TAG, "Socket unable to connect: %s", strerror(errno));
             invalidate();
             return;
         }
         // CHECK(::ioctl(sock, O_NONBLOCK, 0) >= 0);
         // CHECK(esp_tls_set_socket_non_blocking(sock, true));
 
-        ESP_LOGI("rnet", "Socket created, connecting");
+        ESP_LOGI(TAG, "Socket created, connecting");
 
         int err = ::connect(sock, (sockaddr*)&destAddr, sizeof(destAddr));
         if (err != 0) {
-            perror("Socket unable to connect");
+            ESP_LOGE(TAG, "Socket unable to connect: %s", strerror(errno));
             invalidate();
             return;
         }
-        ESP_LOGI("rnet", "Successfully connected");
+        ESP_LOGI(TAG, "Successfully connected");
 
         int flags = fcntl(sock, F_GETFL, NULL);
         CHECK(flags >= 0);
@@ -155,7 +174,7 @@ public:
     bool isOpen()
     {
         if (sock < 0) {
-            ESP_LOGE("rnet", "Invalidating for isOpen 1");
+            ESP_LOGE(TAG, "Invalidating for isOpen 1");
             invalidate();
             return false;
         }
@@ -165,7 +184,7 @@ public:
         int ret = getsockopt(sock, SOL_SOCKET, SO_ERROR, &error, &errorsz);
 
         if (ret != 0 || error != 0) {
-            ESP_LOGI("rnet", "Invalidating for isOpen 2");
+            ESP_LOGI(TAG, "Invalidating for isOpen 2");
             invalidate();
             return false;
         }*/
@@ -182,14 +201,14 @@ public:
     {
         int err = ::send(sock, msg.data(), msg.size(), 0);
         if (err < 0) {
-            perror("Error occurred during sending:");
+            ESP_LOGE(TAG, "Error occurred during sending: %s", strerror(errno));
         }
     }
 
     void recv()
     {
         if (!isOpen()) {
-            ESP_LOGE("rnet", "Socket was not open for recv!");
+            ESP_LOGE(TAG, "Socket was not open for recv!");
             connect();
             return;
         }
@@ -202,15 +221,15 @@ public:
                 // Just skip it for now
             } else {
                 // Error occurred during receiving, or socket closed
-                perror("recv failed");
+                ESP_LOGE(TAG, "recv failed: %s", strerror(errno));
                 invalidate();
             }
         } else {
             // Data received
-            ESP_LOGI("rnet", "Received %d bytes", len);
+            ESP_LOGI(TAG, "Received %d bytes", len);
 
             // Log the content. It's not null terminated, so this works
-            ESP_LOGI("rnet", "Received content: %s", rxBuf);
+            ESP_LOGI(TAG, "Received content: %s", rxBuf);
 
 
             size_t sent = xStreamBufferSend(rxStream, (void*)rxBuf, len, portMAX_DELAY);
@@ -218,45 +237,47 @@ public:
         }
     }
 
-    int readUntilTerminator(char* buf, int max, char terminator)
+    int readUntilTerminator()
     {
-        ESP_LOGI("rnet", "Start read");
-        char* i = buf;
-        do {
-            // Read a character out of the TCP stream
-            int read = xStreamBufferReceive(rxStream, i, max, portMAX_DELAY);
+        while (true) {
+            int read = xStreamBufferReceive(rxStream, packetBuf + packetBufIndex, 1, 0);
 
-            if (read < 0) {
-                ESP_LOGE("rnet", "Stream buffer got bad msg %d", read);
+            if (read == 0) {
+                // No more characters in buffer
+                break;
+            }
+            else if (read == -1) {
+                ESP_LOGE(TAG, "Stream buffer got bad msg %d", read);
                 return -1;
             }
+            
+            char nextChar = *(packetBuf + packetBufIndex);
 
-            i += read;
-        } while (i != buf + max && i[-1] != terminator);
+            if (nextChar == ';') {
+                int size = packetBufIndex;
+                packetBufIndex = 0;
+                return size;
+            }
 
-        if (i == buf + max) {
-            // Packet was too big, abort
-            ESP_LOGE("rnet", "packet was too big");
-            invalidate();
-            return 0;
-        } else {
-            return i - buf - 1;
+            packetBufIndex++;
         }
+
+        return 0;
     }
 
     void sendHello()
     {
-        char helloPacket[58];
+        char helloPacket[80];
         uint8_t mac[6];
         CHECK(esp_read_mac(mac, ESP_MAC_WIFI_STA));
-        snprintf(helloPacket, sizeof(helloPacket), R"({"type":"CLIENT_HELLO","macAddress":"%02X:%02X:%02X:%02X:%02X:%02X"};)", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+        int len = snprintf(helloPacket, sizeof(helloPacket), R"({"type":"CLIENT_HELLO","macAddress":"%02X:%02X:%02X:%02X:%02X:%02X"};)", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
-        send(helloPacket);
+        send(std::string_view(helloPacket, len));
     }
 
     ~TcpClient()
     {
-        ESP_LOGI("rnet", "Removing TcpClient");
+        ESP_LOGI(TAG, "Removing TcpClient");
 
         // todo: this
         shutdown(sock, 0);
@@ -269,8 +290,6 @@ void startNetThread();
 TcpClient* addTcpClient(uint32_t targetIp, uint16_t port);
 
 constexpr int MAX_TCP_SOCKETS = 10;
-constexpr int MAX_TCP_ACCEPT_SOCKETS = 0;
-constexpr int TOTAL_DESCRIPTORS = MAX_TCP_SOCKETS + MAX_TCP_ACCEPT_SOCKETS;
 
 extern TcpClient* clients[MAX_TCP_SOCKETS];
 extern int clientsCount;
