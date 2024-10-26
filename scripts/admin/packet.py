@@ -3,13 +3,14 @@ from enum import Enum
 import datetime
 
 class Packet:
-    class Type(Enum):
+    class Type:
         DRIVE_TANK = "DRIVE_TANK"
         PING_SEND = "PING_SEND"
         SET_VAR = "SET_VAR"
         QUERY_VAR = "QUERY_VAR"
         SERVER_HELLO = "SERVER_HELLO"
         CLIENT_HELLO = "CLIENT_HELLO"
+        LOG = "LOG"
 
     sent: datetime.datetime
 
