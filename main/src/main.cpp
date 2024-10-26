@@ -67,8 +67,9 @@ extern "C" void app_main()
     // Turn off motors in case they were left on
     setGpioOff();
 
+    //TODO: FIX PIN OUTPUT
     // Set at 1Hz for startup
-    startActivityLed();
+    // startActivityLed();
 
     consoleHello();
 
@@ -92,9 +93,16 @@ extern "C" void app_main()
 
     Robot robot;
 
-    while (true) {
-        ESP_LOGI("", "still running");
+    //TODO: FIX PIN OUTPUT
+    gpio_set_direction(PINCONFIG(RELAY_IR_LED), GPIO_MODE_OUTPUT);
+    gpio_set_level(PINCONFIG(RELAY_IR_LED), true);
 
-        vTaskDelay(1_s);
+
+    while (true) {
+        // ESP_LOGI("", "still running");
+        auto lightLevels = robot.lightLevels();
+        ESP_LOGI("", "Light levels: %d %d %d %d", lightLevels[0], lightLevels[1], lightLevels[2], lightLevels[3]);
+
+        vTaskDelay(100_ms);
     }
 }

@@ -33,8 +33,8 @@ DifferentialKinematics::DifferentialKinematics(Motor& leftMotor_, Motor& rightMo
 
 void DifferentialKinematics::tick(uint32_t delta)
 {
-    float leftIn = ticksToDistance(leftMotor->pos());
-    float rightIn = ticksToDistance(rightMotor->pos());
+    float leftIn = leftTarget - leftMotor->pos();
+    float rightIn = rightTarget - rightMotor->pos();
 
     float leftOut = 0.0;
     CHECK(pid_compute(leftPid, leftIn, &leftOut));
@@ -51,21 +51,23 @@ void DifferentialKinematics::tick(uint32_t delta)
 // Map inches of driving to encoder ticks
 int32_t DifferentialKinematics::distanceToTicks(float dist)
 {
-    return dist / FCONFIG(WHEEL_DIAMETER_INCHES) * FCONFIG(ENCODER_MULTIPLIER);
+    return dist * getTicksPerInch();
 }
 
 float DifferentialKinematics::ticksToDistance(int32_t ticks)
 {
-    return (float)(ticks)*FCONFIG(WHEEL_DIAMETER_INCHES) / FCONFIG(ENCODER_MULTIPLIER);
+    return (float)(ticks) / getTicksPerInch();
+}
+
+float DifferentialKinematics::getTicksPerInch()
+{
+    return FCONFIG(ENCODER_MULTIPLIER) / (FCONFIG(WHEEL_DIAMETER_INCHES) * M_PI);
 }
 
 void DifferentialKinematics::forward(float dist)
 {
-    target.pos.x += dist * cos(dist);
-    target.pos.y += dist * sin(dist);
-
-    leftTarget += (dist);
-    rightTarget += (dist);
+    leftTarget = leftMotor->pos() + distanceToTicks(dist);
+    rightTarget = rightMotor->pos() + distanceToTicks(dist);
 }
 
 void DifferentialKinematics::refresh()

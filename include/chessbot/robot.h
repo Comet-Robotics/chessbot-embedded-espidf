@@ -35,6 +35,8 @@ inline void setGpioOff()
     }
     #endif
 
+    gpio_set_level(PINCONFIG(RELAY_IR_LED), 0);
+
     gpio_set_level(PINCONFIG(MOTOR_A_PIN1), 0);
     gpio_set_level(PINCONFIG(MOTOR_A_PIN2), 0);
     gpio_set_level(PINCONFIG(MOTOR_B_PIN1), 0);
