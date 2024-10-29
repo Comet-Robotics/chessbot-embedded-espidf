@@ -1,6 +1,7 @@
 /build/
 /managed_components/
 sdkconfig.old
+sdkconfig
 .vscode/settings.json
 /*.log
 esp-idf-vscode-generated.gdb
