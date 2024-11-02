@@ -64,6 +64,9 @@ void consoleHello()
 
 extern "C" void app_main()
 {
+    // Install GPIO interrupt per-pin using the default interrupt flag level (= 0)
+    gpio_install_isr_service(0);
+
     // Turn off motors in case they were left on
     setGpioOff();
 
