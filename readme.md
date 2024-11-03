@@ -35,7 +35,7 @@
 3. Open the extensions tab on the left (4 squares).
 4. Install the ESP-IDF and Serial Monitor extensions.
 5. Choose "EXPRESS" installation after it finishes installing.
-6. Set "Select ESP-IDF version" to "v5.3 (release version)" and click "Install".
+6. Set "Select ESP-IDF version" to "v5.3.1 (release version)" and click "Install".
 7. Plug the target S2 Mini into your computer.
 8. Press the RST button on the S2 Mini while holding the 0 button. This puts the ESP32 into bootloader mode and allows it to be flashed manually.
 9. Run the command "ESP-IDF: Select port to use" and select the port with "usb" in it.
