@@ -41,5 +41,7 @@ def read_packets(sock: AsyncSocket) -> List[Packet]:
 def send_nonblocking_as_blocking(sock: AsyncSocket, message: str):
     message_bytes = message.encode('utf-8')
 
+    print('Send bytes ', message_bytes);
+
     # this will do bad things if there is too much data
     sock.s.sendall(message_bytes)
