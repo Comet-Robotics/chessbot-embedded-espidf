@@ -26,26 +26,27 @@ def key_down_callback(sender, app_data, user_data):
             conn.send('{"type":"DRIVE_TANK","left":-1,"right":1};')
         elif app_data[0] == KEY_S:
             is_s_held = True
-            conn.send('{"type":"DRIVE_TANK","left":1,"right":-1};')
+            conn.send('{"type":"DRIVE_TANK","left":-1,"right":-1};')
         elif app_data[0] == KEY_D:
             is_d_held = True
-            conn.send('{"type":"DRIVE_TANK","left":-1,"right":-1};')
+            conn.send('{"type":"DRIVE_TANK","left":1,"right":-1};')
 
 def key_up_callback(sender, app_data, user_data):
     global is_w_held, is_a_held, is_s_held, is_d_held, conn
 
     print(f"Key pressed: {app_data}")
-    if app_data == KEY_W:
-        is_w_held = False
-    elif app_data == KEY_A:
-        is_a_held = False
-    elif app_data == KEY_S:
-        is_s_held = False
-    elif app_data == KEY_D:
-        is_d_held = False
-    
-    if not is_w_held and not is_a_held and not is_s_held and not is_d_held:
-        conn.send('{"type":"DRIVE_TANK","left":0,"right":0};')
+    if app_data in [KEY_W, KEY_A, KEY_S, KEY_D]:
+        if app_data == KEY_W:
+            is_w_held = False
+        elif app_data == KEY_A:
+            is_a_held = False
+        elif app_data == KEY_S:
+            is_s_held = False
+        elif app_data == KEY_D:
+            is_d_held = False
+        
+        if not is_w_held and not is_a_held and not is_s_held and not is_d_held:
+            conn.send('{"type":"DRIVE_TANK","left":0,"right":0};')
 
 def bind_movement_keys(robotConn):
     global conn
