@@ -35,13 +35,7 @@ public:
 
     // Recieve target
     char rxBuf[TCP_BUF_SIZE] = {};
-
-    // Used to send packet characters from net thread to robot thread
-    StreamBufferHandle_t rxStream = nullptr;
-
-    // Accumulates packet data until ;
-    char packetBuf[TcpClient::TCP_BUF_SIZE];
-    int packetBufIndex = 0;
+    char* rxCursor = rxBuf;
 
     // Create a TCP connection by connecting to a remote socket
     TcpClient(uint32_t targetIp, uint16_t port)
@@ -88,7 +82,6 @@ public:
     void makeBufs()
     {
         status = xEventGroupCreate();
-        rxStream = xStreamBufferCreate(TCP_BUF_SIZE, 1);
     }
 
     // Acts on a socket that is no longer usable
@@ -105,9 +98,6 @@ public:
         }
         
         xEventGroupClearBits(status, STATUS_OPEN);
-
-        // Note: if a task is waiting on this stream, this call will silently fail
-        xStreamBufferReset(rxStream);
 
         if (reconnectOnFail) 
         {
@@ -205,6 +195,12 @@ public:
         }
     }
 
+    int rxBufSpace() 
+    {
+        ESP_LOGI(TAG, "rxBufSpace %d", (rxBuf + sizeof(rxBuf) - 1) - rxCursor);
+        return (rxBuf + sizeof(rxBuf) - 1) - rxCursor;
+    }
+
     void recv()
     {
         if (!isOpen()) {
@@ -214,55 +210,58 @@ public:
         }
 
         errno = 0;
-        int len = ::recv(sock, rxBuf, sizeof(rxBuf), 0);
+        int len = ::recv(sock, rxCursor, rxBufSpace(), 0);
 
         if (len < 0) {
             if (errno == EWOULDBLOCK || errno == EAGAIN || errno == EINPROGRESS) {
                 // Just skip it for now
+                ESP_LOGE(TAG, "recv 2 failed: %s", strerror(errno));
             } else {
                 // Error occurred during receiving, or socket closed
                 ESP_LOGE(TAG, "recv failed: %s", strerror(errno));
                 invalidate();
             }
         } else {
+            rxCursor += len;
+            CHECK(rxCursor < (rxBuf + sizeof(rxBuf)));
+
             // Data received
             ESP_LOGI(TAG, "Received %d bytes", len);
 
             // Log the content. It's not null terminated, so this works
             ESP_LOGI(TAG, "Received content: %s", rxBuf);
-
-
-            size_t sent = xStreamBufferSend(rxStream, (void*)rxBuf, len, portMAX_DELAY);
-            CHECK(sent == len);
         }
     }
 
-    int readUntilTerminator()
-    {
-        while (true) {
-            int read = xStreamBufferReceive(rxStream, packetBuf + packetBufIndex, 1, 0);
-
-            if (read == 0) {
-                // No more characters in buffer
-                break;
+    char* packetEnd() {
+        for (char* i = rxBuf; i < rxCursor; i++) {
+            if (*i == ';') {
+                return i;
             }
-            else if (read == -1) {
-                ESP_LOGE(TAG, "Stream buffer got bad msg %d", read);
-                return -1;
-            }
-            
-            char nextChar = *(packetBuf + packetBufIndex);
-
-            if (nextChar == ';') {
-                int size = packetBufIndex;
-                packetBufIndex = 0;
-                return size;
-            }
-
-            packetBufIndex++;
         }
 
-        return 0;
+        return rxBuf;
+    }
+
+    bool hasPacket() {
+        return packetEnd() != rxBuf;
+    }
+
+    std::string_view readPacket() {
+        for (char* i = rxBuf; i < rxCursor; i++) {
+            if (*i == ';') {
+                return std::string_view(rxBuf, i);
+            }
+        }
+
+        FAIL();
+    }
+
+    // Copy range from end of packet to read cursor to start
+    void clearPacket() {
+        char* nextPacket = packetEnd() + 1;
+        memmove(rxBuf, nextPacket, rxCursor - nextPacket);
+        rxCursor = rxBuf + (rxCursor - nextPacket);
     }
 
     void sendHello()
@@ -286,6 +285,8 @@ public:
 };
 
 void startNetThread();
+
+void runSockets();
 
 TcpClient* addTcpClient(uint32_t targetIp, uint16_t port);
 

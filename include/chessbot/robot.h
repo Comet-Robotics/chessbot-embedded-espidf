@@ -65,8 +65,8 @@ public:
         // Shut down robot hardware when esp_restart() is called
         esp_register_shutdown_handler(safetyShutdown);
 
-        overrideLog();
-        addLogSink(robotLogSink);
+        //overrideLog();
+        //addLogSink(robotLogSink);
 
         // Start task that polls robot net sockets and acts on their commands
         runThread();

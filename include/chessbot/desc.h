@@ -13,19 +13,17 @@ namespace chessbot {
 // Brushed Electronic Speed Controller
 class MotorDesc {
     public:
-    constexpr static uint32_t FORWARD_MIN = 1900;
-    constexpr static uint32_t FORWARD_MAX = 2200;
-    constexpr static uint32_t REVERSE_MIN = 800;
-    constexpr static uint32_t REVERSE_MAX = 1100;
-    constexpr static uint32_t NEUTRAL = 1500;
+    constexpr static uint32_t FORWARD_MIN = 1295;
+    constexpr static uint32_t FORWARD_MAX = 1380;
+    constexpr static uint32_t REVERSE_MIN = 1100;
+    constexpr static uint32_t REVERSE_MAX = 1160;
+    constexpr static uint32_t NEUTRAL = 1229;
 
     constexpr static uint32_t TIMER_WIDTH_TICKS = 1024;
 
-    private:
     PwmPin pin;
     float& driveMultiplier;
 
-    public:
     MotorDesc(gpio_num_t motorChannelA_,
         gpio_num_t motorChannelB_,
         gpio_num_t encoderChannelA_,

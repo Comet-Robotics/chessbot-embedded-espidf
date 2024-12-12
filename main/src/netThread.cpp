@@ -57,37 +57,39 @@ void invalidateClient(TcpClient* client) {
 }
 
 // Puts TCP socket output into strings, re-establishes closed/crashed sockets
-void netThread(void*)
+void runSockets()
 {
-    while (true) {
-        int rc = poll(pollDescriptors, clientsCount, 5000);
-        if (rc < 0) {
-            ESP_LOGI("", "Poll failed!");
-            FAIL();
+    int rc = poll(pollDescriptors, clientsCount, 5000);
+    if (rc < 0) {
+        ESP_LOGI("", "Poll failed!");
+        for (int i = 0; i < clientsCount; i++) {
+            invalidateClient(clients[i]);
         }
-        else if (rc == 0) {
-            // Poll just timed out
-            continue;
-        } else if (rc > 0) {
-            // Something happened to a listening descriptor
-            for (int i = 0; i < clientsCount; i++) {
-                int revents = pollDescriptors[i].revents;
+    }
+    else if (rc == 0) {
+        // Poll just timed out
+        ESP_LOGI("", "Poll timed out!");
+        return;
+    } else if (rc > 0) {
+        // Something happened to a listening descriptor
+        for (int i = 0; i < clientsCount; i++) {
+            int revents = pollDescriptors[i].revents;
 
-                // This is designed so that remaining data is read first, then an invalid state is handled
-                if (revents & POLLIN) {
-                    clients[i]->recv();
-                } else if (revents & POLLNVAL) {
-                    // Was never valid
-                    ESP_LOGI("", "Invalidating for netThread 1");
-                    invalidateClient(clients[i]);
-                } else if (revents & (POLLHUP | POLLERR)) {
-                    // Got closed
-                    ESP_LOGI("", "Invalidating for netThread 2");
-                    invalidateClient(clients[i]);
-                }
+            // This is designed so that remaining data is read first, then an invalid state is handled
+            if (revents & POLLIN) {
+                clients[i]->recv();
+            } 
+            if (revents & POLLNVAL) {
+                // Was never valid
+                ESP_LOGI("", "Invalidating for netThread 1");
+                invalidateClient(clients[i]);
+            }
+            if (revents & (POLLHUP | POLLERR)) {
+                // Got closed
+                ESP_LOGI("", "Invalidating for netThread 2");
+                invalidateClient(clients[i]);
             }
         }
-        vTaskDelay(1_ms);
     }
 }
 
@@ -135,7 +137,9 @@ void startNetThread()
         pollDescriptors[i].fd = -1;
     }
 
-    xTaskCreate(netThread, "net", TaskStackSize::LARGE, nullptr, TaskPriority::NET, nullptr);
+    // Now done by robotThread
+    //xTaskCreate(netThread, "net", TaskStackSize::LARGE, nullptr, TaskPriority::NET, nullptr);
+
     xTaskCreate(acceptThread, "accept", TaskStackSize::LARGE, nullptr, TaskPriority::NET, nullptr);
 
     ESP_LOGI("", "Started net thread");
@@ -172,7 +176,8 @@ TcpClient* addTcpClientFromSock(int fd, sockaddr_in* addr)
         .events = POLLERR | POLLHUP | POLLIN
     };
 
-    return clients[clientsCount++];
+    clientsCount += 1;
+    return clients[clientsCount - 1];
 }
 
 void acceptTcpServer(int acceptSock)

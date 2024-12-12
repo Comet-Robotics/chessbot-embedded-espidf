@@ -2,6 +2,7 @@
 
 #include <chessbot/util.h>
 #include <chessbot/desc.h>
+#include <chessbot/log.h>
 
 namespace chessbot {
 
@@ -10,25 +11,31 @@ MotorDesc::MotorDesc(gpio_num_t motorChannelA_,
         gpio_num_t encoderChannelA_,
         gpio_num_t encoderChannelB_,
         float& driveMultiplier_) :
-            pin(motorChannelA_), driveMultiplier(driveMultiplier_) {}
+            pin(motorChannelA_), driveMultiplier(driveMultiplier_)
+            {
+                // Allow lock on to neutral as soon as possible
+                pin.setDuty(NEUTRAL);
+            }
 
 MotorDesc::~MotorDesc() {}
 
 void MotorDesc::set(float power) {
+    power *= driveMultiplier;
+
     // Find desired length of pulses in microseconds
     uint32_t us = 0;
+    uint32_t duty = 0;
     if (power == 0.0) {
-        us = NEUTRAL;
+        duty = NEUTRAL;
     }
     else if (power >= 0.0) {
-        us = fmap(power, 0.0, 1.0, FORWARD_MIN, FORWARD_MAX);
+        duty = fmap(power, 0.0, 1.0, FORWARD_MIN, FORWARD_MAX);
     }
     else {
-        power = -power;
-        us = fmap(power, 0.0, 1.0, REVERSE_MIN, REVERSE_MAX);
+        duty = fmap(power, -1.0, 0.0, REVERSE_MIN, REVERSE_MAX);
     }
 
-    uint32_t duty = fmap(us, 0, FORWARD_MAX, 0, ((1 << PwmPin::LEDC_DUTY_RES) - 1));
+    ESP_LOGI("", "Setting power=%f and multiplying with driveMultiplier=%f us=%d duty=%d", power, driveMultiplier, (int)us, (int)duty);
 
     pin.setDuty(duty);
 }
