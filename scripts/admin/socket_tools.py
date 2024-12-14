@@ -21,7 +21,7 @@ def read_lines(sock: AsyncSocket) -> List[str]:
             chunk = None
             chunk = sock.s.recv(1024)
         except BlockingIOError:
-            return
+            return strings
 
         if chunk is not None and len(chunk) != 0:
             print('Got some data: ', chunk.decode('utf-8'))
@@ -31,6 +31,7 @@ def read_lines(sock: AsyncSocket) -> List[str]:
                 pos = sock.partial.find(';')
                 strings.append(sock.partial[0:pos])
                 sock.partial = sock.partial[pos:]
+                print('break packet', strings)
 
 def read_packets(sock: AsyncSocket) -> List[Packet]:
     lines = read_lines(sock)

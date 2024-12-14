@@ -53,7 +53,7 @@ class RobotConnection:
 
     def disconnect(self):
         self.setStatus(ConnStatus.DISCONNECTED)
-        self.s.close()
+        self.sock.s.close()
         print('Closing connection to', self.ip)
 
     def setStatus(self, newStatus: ConnStatus):
@@ -79,7 +79,8 @@ class RobotConnection:
             if packets is not None:
                 for p in packets:
                     print('Packet', p.type, p.data)
-                    if p.type == Packet.Type.CLIENT_HELLO:
+                    if p.type == 'CLIENT_HELLO':
+                        print('onHello')
                         self.onHello(p)
                     elif p.type == Packet.Type.LOG:
                         self.onLog(p)

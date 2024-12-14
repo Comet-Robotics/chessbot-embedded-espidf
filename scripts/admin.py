@@ -44,9 +44,9 @@ while dpg.is_dearpygui_running():
         for event in pygame.event.get():
             if event.type == pygame.JOYAXISMOTION:
                 if event.axis == 1: #LY
-                    controller[0] = -event.value
-                if event.axis == 3: #RY
                     controller[1] = -event.value
+                if event.axis == 3: #RY
+                    controller[0] = -event.value
         
         controller = [0 if abs(i) < 0.1 else i for i in controller]
 

@@ -10,6 +10,7 @@ class Packet:
         QUERY_VAR = "QUERY_VAR"
         SERVER_HELLO = "SERVER_HELLO"
         CLIENT_HELLO = "CLIENT_HELLO"
+        LOG = "LOG"
 
     sent: datetime.datetime
 
