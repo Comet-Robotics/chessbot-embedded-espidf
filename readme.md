@@ -1,5 +1,8 @@
 # chessBots Embedded Code
 
+> [!IMPORTANT]  
+> This repo is deprecated as we are no longer using `esp-idf` and have migrated to the Arduino framework - the new repo for embedded code is https://github.com/Comet-Robotics/chessbot-embedded.
+
 ## First Time Setup
 
 1. Open this folder in Visual Studio Code.
